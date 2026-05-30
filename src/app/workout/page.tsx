@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Flame, Trophy, ChevronRight } from "lucide-react";
-import { genId } from "@/lib/utils";
+import { Plus, X, Flame, Trophy, ChevronRight, Dumbbell, Activity, ChevronLeft } from "lucide-react";
+import { genId, calcCalories } from "@/lib/utils";
 import {
   calc1RM,
   getProgressionSuggestion,
@@ -18,6 +18,7 @@ import {
   PersonalRecord,
   Routine,
   SavedSet,
+  WorkoutType,
 } from "@/lib/types";
 import ExercisePicker from "@/components/workout/ExercisePicker";
 import SetRow from "@/components/workout/SetRow";
@@ -66,6 +67,7 @@ export default function WorkoutPage() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [saving, setSaving] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [workoutMode, setWorkoutMode] = useState<"weights" | "cardio" | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -392,56 +394,121 @@ export default function WorkoutPage() {
 
   // ─── Idle state ─────────────────────────────────────────────────────────────
   if (!session) {
+    // Cardio mode
+    if (workoutMode === "cardio") {
+      return (
+        <CardioQuickLog
+          userWeightKg={undefined}
+          onBack={() => setWorkoutMode(null)}
+          onDone={() => router.push("/history")}
+        />
+      );
+    }
+
+    // Weight training mode
+    if (workoutMode === "weights") {
+      return (
+        <div className="min-h-screen bg-slate-50 pb-24">
+          <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
+            {/* Back */}
+            <button
+              onClick={() => setWorkoutMode(null)}
+              className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 -ml-1"
+            >
+              <ChevronLeft size={18} />
+              กลับ
+            </button>
+
+            {/* Start empty */}
+            <div className="card p-6 text-center space-y-3">
+              <div className="w-14 h-14 bg-violet-500 rounded-2xl flex items-center justify-center mx-auto">
+                <Dumbbell size={26} className="text-white" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">Weight Training</h2>
+              <p className="text-sm text-slate-500">
+                บันทึกทุก set แบบ real-time พร้อม Rest Timer และ PR Tracker
+              </p>
+              <button onClick={startEmpty} className="btn-primary px-8 py-3">
+                เริ่ม Workout เปล่า
+              </button>
+            </div>
+
+            {/* Routines */}
+            {routines.length > 0 && (
+              <div className="card p-5">
+                <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-3">
+                  เริ่มจาก Routine
+                </h2>
+                <div className="space-y-2">
+                  {routines.map((r) => (
+                    <button
+                      key={r._id}
+                      onClick={() => startFromRoutine(r)}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+                    >
+                      <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
+                        <Trophy size={16} className="text-violet-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-800 text-sm">{r.name}</p>
+                        <p className="text-xs text-slate-400">{r.exercises.length} exercises</p>
+                      </div>
+                      <ChevronRight size={16} className="text-slate-300" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Mode selector (default)
     return (
       <div className="min-h-screen bg-slate-50 pb-24">
-        <div className="max-w-xl mx-auto px-4 pt-8 space-y-6">
-          {/* Hero */}
-          <div className="text-center space-y-3">
-            <div className="w-16 h-16 bg-violet-500 rounded-2xl flex items-center justify-center mx-auto">
+        <div className="max-w-xl mx-auto px-4 pt-10 space-y-6">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-sky-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Flame size={28} className="text-white" />
             </div>
             <h1 className="text-2xl font-bold text-slate-800">เริ่ม Workout</h1>
-            <p className="text-sm text-slate-500">
-              บันทึกทุก set แบบ real-time พร้อม Rest Timer และ PR Tracker
-            </p>
-            <button
-              onClick={startEmpty}
-              className="btn-primary px-8 py-3 text-base"
-            >
-              เริ่ม Workout เปล่า
-            </button>
+            <p className="text-sm text-slate-500 mt-1">เลือกประเภทการออกกำลังกาย</p>
           </div>
 
-          {/* Routines */}
-          {routines.length > 0 && (
-            <div className="card p-5">
-              <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-3">
-                เริ่มจาก Routine
-              </h2>
-              <div className="space-y-2">
-                {routines.map((r) => (
-                  <button
-                    key={r._id}
-                    onClick={() => startFromRoutine(r)}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
-                  >
-                    <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
-                      <Trophy size={16} className="text-violet-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-800 text-sm">
-                        {r.name}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {r.exercises.length} exercises
-                      </p>
-                    </div>
-                    <ChevronRight size={16} className="text-slate-300" />
-                  </button>
-                ))}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Weight Training card */}
+            <button
+              onClick={() => setWorkoutMode("weights")}
+              className="card p-6 flex flex-col items-center gap-3 hover:shadow-md hover:border-violet-200 active:scale-95 transition-all text-center"
+            >
+              <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center">
+                <Dumbbell size={28} className="text-violet-600" />
               </div>
-            </div>
-          )}
+              <div>
+                <p className="font-bold text-slate-800">เวทเทรนนิง</p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-snug">
+                  ติดตาม set · Rest Timer · PR
+                </p>
+              </div>
+            </button>
+
+            {/* Cardio card */}
+            <button
+              onClick={() => setWorkoutMode("cardio")}
+              className="card p-6 flex flex-col items-center gap-3 hover:shadow-md hover:border-emerald-200 active:scale-95 transition-all text-center"
+            >
+              <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                <Activity size={28} className="text-emerald-600" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800">คาร์ดิโอ</p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-snug">
+                  วิ่ง · ปั่น · ว่ายน้ำ · HIIT
+                </p>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -671,6 +738,188 @@ export default function WorkoutPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Cardio Quick Log ────────────────────────────────────────────────────────
+
+const CARDIO_TYPES: { type: WorkoutType; label: string; emoji: string; color: string }[] = [
+  { type: "Running",  label: "วิ่ง",      emoji: "🏃", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  { type: "Cycling",  label: "ปั่นจักรยาน", emoji: "🚴", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { type: "Swimming", label: "ว่ายน้ำ",   emoji: "🏊", color: "bg-sky-100 text-sky-700 border-sky-200" },
+  { type: "HIIT",     label: "HIIT",      emoji: "⚡", color: "bg-red-100 text-red-700 border-red-200" },
+  { type: "Yoga",     label: "โยคะ",      emoji: "🧘", color: "bg-pink-100 text-pink-700 border-pink-200" },
+  { type: "Other",    label: "อื่นๆ",     emoji: "🎯", color: "bg-slate-100 text-slate-600 border-slate-200" },
+];
+
+function CardioQuickLog({
+  userWeightKg,
+  onBack,
+  onDone,
+}: {
+  userWeightKg?: number;
+  onBack: () => void;
+  onDone: () => void;
+}) {
+  const [type, setType] = useState<WorkoutType>("Running");
+  const [duration, setDuration] = useState("");
+  const [distance, setDistance] = useState("");
+  const [pace, setPace] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const showDistance = type === "Running" || type === "Cycling";
+  const dur = Number(duration);
+  const calories = dur > 0 ? calcCalories(type, dur, userWeightKg ?? 70) : 0;
+
+  async function handleSave() {
+    if (!dur || dur <= 0) return;
+    setSaving(true);
+    try {
+      const entry = {
+        id: genId(),
+        date: new Date().toISOString().split("T")[0],
+        type,
+        duration: dur,
+        calories,
+        notes: notes.trim() || undefined,
+        details: showDistance
+          ? { distance: Number(distance) || 0, pace: pace.trim() }
+          : undefined,
+      };
+      const res = await fetch("/api/workouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(onDone, 1200);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const selected = CARDIO_TYPES.find((c) => c.type === type)!;
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-24">
+      <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
+        {/* Back */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 -ml-1"
+        >
+          <ChevronLeft size={18} />
+          กลับ
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-2xl">
+            {selected.emoji}
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">คาร์ดิโอ</h1>
+            <p className="text-xs text-slate-400">บันทึกการออกกำลังกายแบบ cardio</p>
+          </div>
+        </div>
+
+        {/* Type selector */}
+        <div className="grid grid-cols-3 gap-2">
+          {CARDIO_TYPES.map((c) => (
+            <button
+              key={c.type}
+              onClick={() => setType(c.type)}
+              className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all ${
+                type === c.type
+                  ? c.color + " border-current shadow-sm"
+                  : "bg-white border-slate-100 text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <span className="text-xl">{c.emoji}</span>
+              <span className="text-xs font-semibold">{c.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="card p-5 space-y-4">
+          {/* Duration */}
+          <div>
+            <label className="label">ระยะเวลา (นาที)</label>
+            <input
+              type="number"
+              className="input text-lg font-bold"
+              placeholder="30"
+              min={1}
+              max={600}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+            />
+          </div>
+
+          {/* Calorie preview */}
+          {dur > 0 && (
+            <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
+              <span className="text-sm text-emerald-700 font-medium">ประมาณแคลอรี</span>
+              <span className="text-lg font-bold text-emerald-700">{calories} kcal</span>
+            </div>
+          )}
+
+          {/* Distance + Pace */}
+          {showDistance && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">ระยะทาง (km)</label>
+                <input
+                  type="number"
+                  className="input"
+                  placeholder="5.0"
+                  min={0}
+                  step={0.1}
+                  value={distance}
+                  onChange={(e) => setDistance(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Pace (min/km)</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="5:30"
+                  value={pace}
+                  onChange={(e) => setPace(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <label className="label">หมายเหตุ (ไม่บังคับ)</label>
+            <textarea
+              className="input resize-none"
+              rows={2}
+              placeholder="เพิ่มโน้ต..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          {/* Save button */}
+          <button
+            onClick={handleSave}
+            disabled={saving || !dur || saved}
+            className={`btn-primary w-full py-3 text-base transition-colors ${
+              saved ? "!bg-emerald-500" : ""
+            }`}
+          >
+            {saved ? "✓ บันทึกสำเร็จ!" : saving ? "กำลังบันทึก..." : "บันทึก Cardio"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
