@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, TrendingUp, Dumbbell } from "lucide-react";
+import { Trophy, TrendingUp, Dumbbell, Scale } from "lucide-react";
 import { PersonalRecord, WorkoutSession } from "@/lib/types";
 import VolumeChart, { WeekVolume } from "@/components/progress/VolumeChart";
-import { MUSCLE_GROUP_COLORS } from "@/lib/exercises";
+import WeightTrendChart from "@/components/WeightTrendChart";
 
 function getLastNWeeks(n: number): WeekVolume[] {
   const weeks: WeekVolume[] = [];
@@ -25,19 +25,19 @@ export default function ProgressPage() {
   const router = useRouter();
   const [prs, setPrs] = useState<PersonalRecord[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [weightLogs, setWeightLogs] = useState<{ _id: string; date: string; weightKg: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/prs").then((r) => {
-        if (!r.ok) throw new Error("auth");
-        return r.json();
-      }),
+      fetch("/api/prs").then((r) => { if (!r.ok) throw new Error("auth"); return r.json(); }),
       fetch("/api/sessions?limit=100").then((r) => r.json()),
+      fetch("/api/weight?limit=60").then((r) => r.ok ? r.json() : { logs: [] }),
     ])
-      .then(([prData, sessionData]) => {
+      .then(([prData, sessionData, weightData]) => {
         if (prData.prs) setPrs(prData.prs);
         if (sessionData.sessions) setSessions(sessionData.sessions);
+        if (weightData.logs) setWeightLogs(weightData.logs);
       })
       .catch(() => router.push("/login"))
       .finally(() => setLoading(false));
@@ -61,18 +61,6 @@ export default function ProgressPage() {
     });
     return weeks;
   }, [sessions]);
-
-  // Group PRs by muscle group
-  const prsByMuscle = useMemo(() => {
-    const groups: Record<string, PersonalRecord[]> = {};
-    prs.forEach((pr) => {
-      // Try to find muscle group from exerciseId prefix or just group by name
-      const key = "All";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(pr);
-    });
-    return groups;
-  }, [prs]);
 
   if (loading) {
     return (
@@ -114,6 +102,58 @@ export default function ProgressPage() {
           </div>
           <VolumeChart data={volumeData} />
         </div>
+
+        {/* Weight trend chart */}
+        {weightLogs.length >= 2 && (
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Scale size={17} className="text-violet-500" />
+                <h2 className="font-semibold text-slate-700">น้ำหนักย้อนหลัง</h2>
+              </div>
+              {(() => {
+                const recent7 = weightLogs.slice(0, 7);
+                const avg = recent7.reduce((s, l) => s + l.weightKg, 0) / recent7.length;
+                return (
+                  <span className="text-xs text-slate-400">
+                    เฉลี่ย 7 วัน: <span className="font-semibold text-violet-600">{avg.toFixed(1)} kg</span>
+                  </span>
+                );
+              })()}
+            </div>
+            <WeightTrendChart logs={weightLogs} days={28} />
+            {/* Weekly summary table */}
+            {weightLogs.length >= 7 && (
+              <div className="mt-4 space-y-1">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">สรุปรายสัปดาห์</p>
+                {Array.from({ length: Math.ceil(Math.min(weightLogs.length, 28) / 7) }, (_, wi) => {
+                  const weekLogs = weightLogs.slice(wi * 7, wi * 7 + 7);
+                  if (weekLogs.length === 0) return null;
+                  const avg = weekLogs.reduce((s, l) => s + l.weightKg, 0) / weekLogs.length;
+                  const prevWeek = weightLogs.slice((wi + 1) * 7, (wi + 1) * 7 + 7);
+                  const prevAvg = prevWeek.length > 0
+                    ? prevWeek.reduce((s, l) => s + l.weightKg, 0) / prevWeek.length
+                    : null;
+                  const diff = prevAvg != null ? avg - prevAvg : null;
+                  const weekLabel = wi === 0 ? "สัปดาห์นี้" : wi === 1 ? "สัปดาห์ที่แล้ว" : `${wi + 1} สัปดาห์ก่อน`;
+                  return (
+                    <div key={wi} className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50">
+                      <span className="text-sm text-slate-600">{weekLabel}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-violet-600 tabular-nums">{avg.toFixed(1)} kg</span>
+                        {diff !== null && (
+                          <span className={`text-xs font-semibold tabular-nums ${diff < 0 ? "text-emerald-500" : diff > 0 ? "text-orange-500" : "text-slate-400"}`}>
+                            {diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)} kg
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Personal Records */}
         <div className="card p-5">

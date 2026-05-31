@@ -595,6 +595,7 @@ export default function NutritionPage() {
   const [activityLevel, setActivityLevel] = useState<1 | 2 | 3 | 4 | 5>(2);
   const [dietPlan, setDietPlan] = useState<DietPlan>("maintenance");
   const [burnedToday, setBurnedToday] = useState(0);
+  const [avgWeight, setAvgWeight] = useState<number | null>(null);
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -606,12 +607,20 @@ export default function NutritionPage() {
     setLoading(false);
   }, [dateStr]);
 
-  // Load profile for TDEE
+  // Load profile + 7-day average weight for TDEE
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.profile) setProfile(d.profile); });
+
+    fetch("/api/weight?limit=7")
+      .then((r) => (r.ok ? r.json() : { logs: [] }))
       .then((d) => {
-        if (d?.profile) setProfile(d.profile);
+        const logs: { weightKg: number }[] = d.logs ?? [];
+        if (logs.length > 0) {
+          const avg = logs.reduce((s, l) => s + l.weightKg, 0) / logs.length;
+          setAvgWeight(avg);
+        }
       });
   }, []);
 
@@ -655,10 +664,11 @@ export default function NutritionPage() {
   const totalCarbs = entries.reduce((s, e) => s + (e.carbs ?? 0), 0);
   const totalFat = entries.reduce((s, e) => s + (e.fat ?? 0), 0);
 
-  // TDEE
+  // TDEE — use 7-day avg weight if available, else profile weight
+  const weightForTDEE = avgWeight ?? profile.weight;
   const tdee =
-    profile.weight && profile.height && profile.age && profile.gender
-      ? calcTDEE(profile.weight, profile.height, profile.age, profile.gender, activityLevel)
+    weightForTDEE && profile.height && profile.age && profile.gender
+      ? calcTDEE(weightForTDEE, profile.height, profile.age, profile.gender, activityLevel)
       : 2000;
 
   // Diet plan target
@@ -775,7 +785,12 @@ export default function NutritionPage() {
               {" "}(TDEE {planCfg.calAdj > 0 ? "+" : ""}{planCfg.calAdj})
             </span>
           )}
-          {!profile.weight && " · ค่าเริ่มต้น — กรอกใน Profile"}
+          {avgWeight
+            ? <span className="text-violet-400"> · ใช้น้ำหนักเฉลี่ย {avgWeight.toFixed(1)} kg</span>
+            : !profile.weight
+              ? " · ค่าเริ่มต้น — กรอกใน Profile"
+              : <span className="text-slate-400"> · ใช้น้ำหนักจาก Profile</span>
+          }
         </p>
       </div>
 

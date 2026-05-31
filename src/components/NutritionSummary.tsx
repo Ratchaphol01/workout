@@ -23,6 +23,7 @@ export default function NutritionSummary() {
   const [burned, setBurned] = useState(0);
   const [activityLevel, setActivityLevel] = useState<1 | 2 | 3 | 4 | 5>(2);
   const [dietPlan, setDietPlan] = useState<DietPlan>("maintenance");
+  const [avgWeight, setAvgWeight] = useState<number | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -48,14 +49,24 @@ export default function NutritionSummary() {
           .reduce((s: number, w: { calories: number }) => s + (w.calories ?? 0), 0);
         setBurned(b);
       });
+
+    fetch("/api/weight?limit=7")
+      .then((r) => (r.ok ? r.json() : { logs: [] }))
+      .then((d) => {
+        const logs: { weightKg: number }[] = d.logs ?? [];
+        if (logs.length > 0) {
+          setAvgWeight(logs.reduce((s, l) => s + l.weightKg, 0) / logs.length);
+        }
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const eaten = entries.reduce((s, e) => s + e.calories, 0);
 
+  const weightForTDEE = avgWeight ?? profile.weight;
   const tdee =
-    profile.weight && profile.height && profile.age && profile.gender
-      ? calcTDEE(profile.weight, profile.height, profile.age, profile.gender, activityLevel)
+    weightForTDEE && profile.height && profile.age && profile.gender
+      ? calcTDEE(weightForTDEE, profile.height, profile.age, profile.gender, activityLevel)
       : 2000;
 
   const planCfg = DIET_PLANS[dietPlan];
