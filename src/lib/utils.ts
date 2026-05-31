@@ -92,6 +92,31 @@ export function getLast7DaysCalories(
   return result;
 }
 
+// Mifflin-St Jeor BMR
+export function calcBMR(
+  weightKg: number,
+  heightCm: number,
+  age: number,
+  gender: "male" | "female" | "other"
+): number {
+  const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
+  return Math.round(gender === "female" ? base - 161 : base + 5);
+}
+
+// Activity multipliers: 1=sedentary, 2=light, 3=moderate, 4=active, 5=very active
+const ACTIVITY_FACTORS = [1.2, 1.375, 1.55, 1.725, 1.9];
+
+export function calcTDEE(
+  weightKg: number,
+  heightCm: number,
+  age: number,
+  gender: "male" | "female" | "other",
+  activityLevel: 1 | 2 | 3 | 4 | 5 = 2
+): number {
+  const bmr = calcBMR(weightKg, heightCm, age, gender);
+  return Math.round(bmr * ACTIVITY_FACTORS[activityLevel - 1]);
+}
+
 export const ALL_TYPES: WorkoutType[] = [
   "Weight Training",
   "Running",

@@ -10,6 +10,7 @@ import {
 } from "@/lib/utils";
 import CalorieChart from "./CalorieChart";
 import StrengthProgress from "./StrengthProgress";
+import NutritionSummary from "./NutritionSummary";
 
 // --- Weekly reminder banner ---
 function WeightReminderBanner({
@@ -333,6 +334,9 @@ export default function Dashboard({
 
       {/* Row 3: Strength progress */}
       <StrengthProgress />
+
+      {/* Row 4: Nutrition summary */}
+      <NutritionSummary />
     </div>
   );
 }

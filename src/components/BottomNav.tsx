@@ -7,15 +7,15 @@ import {
   Dumbbell,
   History,
   TrendingUp,
-  BookOpen,
+  UtensilsCrossed,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/",          label: "Home",     icon: LayoutDashboard },
-  { href: "/workout",   label: "Workout",  icon: Dumbbell },
-  { href: "/history",   label: "History",  icon: History },
-  { href: "/progress",  label: "Progress", icon: TrendingUp },
-  { href: "/exercises", label: "Exercises",icon: BookOpen },
+  { href: "/",          label: "Home",      icon: LayoutDashboard },
+  { href: "/workout",   label: "Workout",   icon: Dumbbell },
+  { href: "/history",   label: "History",   icon: History },
+  { href: "/progress",  label: "Progress",  icon: TrendingUp },
+  { href: "/nutrition", label: "Nutrition", icon: UtensilsCrossed },
 ];
 
 export default function BottomNav() {
