@@ -14,6 +14,7 @@ import {
   Droplets,
 } from "lucide-react";
 import { calcTDEE } from "@/lib/utils";
+import { DIET_PLANS, type DietPlan } from "@/lib/nutrition";
 
 // ---- Types ----
 interface FoodEntry {
@@ -399,6 +400,48 @@ function MacroBars({
   );
 }
 
+// ---- Plan selector card ----
+function PlanSelector({
+  value,
+  onChange,
+}: {
+  value: DietPlan;
+  onChange: (p: DietPlan) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {(Object.keys(DIET_PLANS) as DietPlan[]).map((plan) => {
+        const cfg = DIET_PLANS[plan];
+        const active = value === plan;
+        return (
+          <button
+            key={plan}
+            onClick={() => onChange(plan)}
+            className={`flex flex-col items-center gap-1 py-3 px-2 rounded-2xl border-2 transition-all ${
+              active
+                ? `${cfg.bg} ${cfg.border} shadow-sm`
+                : "bg-white border-slate-100 hover:border-slate-200"
+            }`}
+          >
+            <span
+              className={`w-2.5 h-2.5 rounded-full`}
+              style={{ backgroundColor: cfg.dot }}
+            />
+            <span
+              className={`text-sm font-bold ${active ? cfg.color : "text-slate-600"}`}
+            >
+              {cfg.label}
+            </span>
+            <span className={`text-[10px] font-medium ${active ? cfg.color : "text-slate-400"}`}>
+              {cfg.labelTh}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ---- Activity level picker inside settings ----
 function ActivityPicker({
   value,
@@ -438,6 +481,7 @@ export default function NutritionPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [profile, setProfile] = useState<Profile>({});
   const [activityLevel, setActivityLevel] = useState<1 | 2 | 3 | 4 | 5>(2);
+  const [dietPlan, setDietPlan] = useState<DietPlan>("maintenance");
   const [burnedToday, setBurnedToday] = useState(0);
 
   const fetchEntries = useCallback(async () => {
@@ -475,15 +519,22 @@ export default function NutritionPage() {
     fetchEntries();
   }, [fetchEntries]);
 
-  // Persist activity level to localStorage
+  // Restore settings from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("nutrition_activity");
-    if (saved) setActivityLevel(Number(saved) as 1 | 2 | 3 | 4 | 5);
+    const savedActivity = localStorage.getItem("nutrition_activity");
+    if (savedActivity) setActivityLevel(Number(savedActivity) as 1 | 2 | 3 | 4 | 5);
+    const savedPlan = localStorage.getItem("nutrition_plan") as DietPlan | null;
+    if (savedPlan && savedPlan in DIET_PLANS) setDietPlan(savedPlan);
   }, []);
 
   const saveActivityLevel = (v: 1 | 2 | 3 | 4 | 5) => {
     setActivityLevel(v);
     localStorage.setItem("nutrition_activity", String(v));
+  };
+
+  const saveDietPlan = (p: DietPlan) => {
+    setDietPlan(p);
+    localStorage.setItem("nutrition_plan", p);
   };
 
   // Totals
@@ -498,10 +549,14 @@ export default function NutritionPage() {
       ? calcTDEE(profile.weight, profile.height, profile.age, profile.gender, activityLevel)
       : 2000;
 
-  // Macro targets (based on TDEE): 30% protein, 40% carbs, 30% fat
-  const targetProtein = Math.round((tdee * 0.3) / 4);
-  const targetCarbs = Math.round((tdee * 0.4) / 4);
-  const targetFat = Math.round((tdee * 0.3) / 9);
+  // Diet plan target
+  const planCfg = DIET_PLANS[dietPlan];
+  const calorieTarget = tdee + planCfg.calAdj;
+
+  // Macro targets based on plan ratios
+  const targetProtein = Math.round((calorieTarget * planCfg.macros.protein) / 4);
+  const targetCarbs = Math.round((calorieTarget * planCfg.macros.carbs) / 4);
+  const targetFat = Math.round((calorieTarget * planCfg.macros.fat) / 9);
 
   function shiftDate(days: number) {
     const d = new Date(dateStr + "T00:00:00");
@@ -542,6 +597,17 @@ export default function NutritionPage() {
         </div>
       </div>
 
+      {/* Diet plan selector */}
+      <div className="card p-4">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          เป้าหมายอาหาร
+        </p>
+        <PlanSelector value={dietPlan} onChange={saveDietPlan} />
+        <p className="text-[11px] text-slate-400 text-center mt-3">
+          {planCfg.desc}
+        </p>
+      </div>
+
       {/* Date picker */}
       <div className="flex items-center justify-center gap-4">
         <button onClick={() => shiftDate(-1)} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
@@ -574,7 +640,7 @@ export default function NutritionPage() {
           <Flame size={16} className="text-orange-400" />
           <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">สมดุลแคลอรี</h2>
         </div>
-        <CalorieRing eaten={totalCalories} burned={burnedToday} target={tdee} />
+        <CalorieRing eaten={totalCalories} burned={burnedToday} target={calorieTarget} />
       </div>
 
       {/* Macro breakdown */}
@@ -591,8 +657,13 @@ export default function NutritionPage() {
           targetFat={targetFat}
         />
         <p className="text-[10px] text-slate-400 mt-3 text-center">
-          เป้าหมาย TDEE: {tdee.toLocaleString()} kcal/วัน
-          {!profile.weight && " (ค่าเริ่มต้น — กรอกข้อมูลใน Profile เพื่อความแม่นยำ)"}
+          เป้าหมาย {planCfg.label}: {calorieTarget.toLocaleString()} kcal/วัน
+          {planCfg.calAdj !== 0 && (
+            <span className={planCfg.calAdj < 0 ? "text-sky-400" : "text-amber-400"}>
+              {" "}(TDEE {planCfg.calAdj > 0 ? "+" : ""}{planCfg.calAdj})
+            </span>
+          )}
+          {!profile.weight && " · ค่าเริ่มต้น — กรอกใน Profile"}
         </p>
       </div>
 
@@ -693,6 +764,11 @@ export default function NutritionPage() {
                 <p className="text-xs text-slate-500">TDEE ของคุณ</p>
                 <p className="text-2xl font-bold text-slate-800">{tdee.toLocaleString()}</p>
                 <p className="text-xs text-slate-400">kcal/วัน</p>
+                {planCfg.calAdj !== 0 && (
+                  <p className={`text-xs font-semibold mt-1 ${planCfg.color}`}>
+                    เป้า {planCfg.label}: {calorieTarget.toLocaleString()} kcal
+                  </p>
+                )}
               </div>
             </div>
             <div className="px-4 pb-4">

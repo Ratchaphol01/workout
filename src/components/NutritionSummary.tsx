@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import { UtensilsCrossed, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { calcTDEE } from "@/lib/utils";
+import { DIET_PLANS, type DietPlan } from "@/lib/nutrition";
 
 interface FoodEntry {
   calories: number;
-  protein?: number;
-  carbs?: number;
-  fat?: number;
 }
 
 interface Profile {
@@ -24,12 +22,15 @@ export default function NutritionSummary() {
   const [profile, setProfile] = useState<Profile>({});
   const [burned, setBurned] = useState(0);
   const [activityLevel, setActivityLevel] = useState<1 | 2 | 3 | 4 | 5>(2);
+  const [dietPlan, setDietPlan] = useState<DietPlan>("maintenance");
 
   const todayStr = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    const saved = localStorage.getItem("nutrition_activity");
-    if (saved) setActivityLevel(Number(saved) as 1 | 2 | 3 | 4 | 5);
+    const savedActivity = localStorage.getItem("nutrition_activity");
+    if (savedActivity) setActivityLevel(Number(savedActivity) as 1 | 2 | 3 | 4 | 5);
+    const savedPlan = localStorage.getItem("nutrition_plan") as DietPlan | null;
+    if (savedPlan && savedPlan in DIET_PLANS) setDietPlan(savedPlan);
 
     fetch(`/api/food?date=${todayStr}`)
       .then((r) => (r.ok ? r.json() : { entries: [] }))
@@ -57,9 +58,11 @@ export default function NutritionSummary() {
       ? calcTDEE(profile.weight, profile.height, profile.age, profile.gender, activityLevel)
       : 2000;
 
-  const remaining = Math.max(0, tdee - eaten + burned);
-  const pct = Math.min(1, (eaten - burned) / tdee);
-  const overEaten = eaten - burned > tdee;
+  const planCfg = DIET_PLANS[dietPlan];
+  const calorieTarget = tdee + planCfg.calAdj;
+  const remaining = Math.max(0, calorieTarget - eaten + burned);
+  const pct = Math.min(1, (eaten - burned) / calorieTarget);
+  const overEaten = eaten - burned > calorieTarget;
 
   const R = 28;
   const C = 2 * Math.PI * R;
@@ -93,12 +96,18 @@ export default function NutritionSummary() {
             โภชนาการวันนี้
           </h2>
         </div>
-        <Link
-          href="/nutrition"
-          className="flex items-center gap-1 text-xs text-slate-400 hover:text-orange-500 transition-colors"
-        >
-          ดูทั้งหมด <ArrowRight size={12} />
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Plan badge */}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${planCfg.bg} ${planCfg.color}`}>
+            {planCfg.label}
+          </span>
+          <Link
+            href="/nutrition"
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-orange-500 transition-colors"
+          >
+            ดูทั้งหมด <ArrowRight size={12} />
+          </Link>
+        </div>
       </div>
 
       <div className="flex items-center gap-5">
@@ -111,7 +120,7 @@ export default function NutritionSummary() {
               cy="40"
               r={R}
               fill="none"
-              stroke={overEaten ? "#ef4444" : "#f97316"}
+              stroke={overEaten ? "#ef4444" : planCfg.dot}
               strokeWidth={10}
               strokeDasharray={`${pct * C} ${C}`}
               strokeDashoffset={C / 4}
@@ -130,7 +139,7 @@ export default function NutritionSummary() {
         <div className="flex-1 grid grid-cols-3 gap-2 text-center">
           <div>
             <p className="text-[10px] text-slate-400">เป้า</p>
-            <p className="text-base font-bold text-slate-700 tabular-nums">{tdee.toLocaleString()}</p>
+            <p className="text-base font-bold text-slate-700 tabular-nums">{calorieTarget.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-[10px] text-orange-400">กิน</p>
