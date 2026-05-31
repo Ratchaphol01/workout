@@ -9,6 +9,7 @@ import {
   WORKOUT_CHART_COLORS,
 } from "@/lib/utils";
 import CalorieChart from "./CalorieChart";
+import StrengthProgress from "./StrengthProgress";
 
 // --- Weekly reminder banner ---
 function WeightReminderBanner({
@@ -329,6 +330,9 @@ export default function Dashboard({
         </div>
         <CalorieChart data={chartData} />
       </div>
+
+      {/* Row 3: Strength progress */}
+      <StrengthProgress />
     </div>
   );
 }
