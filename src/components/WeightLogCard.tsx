@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Scale, Check, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { localDate } from "@/lib/utils";
 
 interface WeightLog {
   _id: string;
@@ -24,7 +25,7 @@ export default function WeightLogCard({ profileWeight, onAvgWeightChange }: Prop
   const now = new Date();
   const logDate = new Date(now);
   if (now.getHours() < 5) logDate.setDate(logDate.getDate() - 1);
-  const todayStr = logDate.toISOString().split("T")[0];
+  const todayStr = localDate(logDate);
 
   const fetchLogs = useCallback(async () => {
     const res = await fetch("/api/weight?limit=14");
@@ -56,7 +57,7 @@ export default function WeightLogCard({ profileWeight, onAvgWeightChange }: Prop
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split("T")[0];
+    const ds = localDate(d);
     sparkData.push(logs.find((l) => l.date === ds)?.weightKg ?? null);
   }
   const sparkMin = Math.min(...sparkData.filter((v): v is number => v !== null));

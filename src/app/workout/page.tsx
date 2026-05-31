@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X, Flame, Trophy, ChevronRight, Dumbbell, Activity, ChevronLeft } from "lucide-react";
-import { genId, calcCalories } from "@/lib/utils";
+import { genId, calcCalories, localDate } from "@/lib/utils";
 import {
   calc1RM,
   getProgressionSuggestion,
@@ -802,7 +802,7 @@ function CardioQuickLog({
     try {
       const entry = {
         id: genId(),
-        date: new Date().toISOString().split("T")[0],
+        date: localDate(),
         type,
         duration: dur,
         calories,

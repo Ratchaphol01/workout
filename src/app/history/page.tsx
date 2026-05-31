@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { WorkoutSession } from "@/lib/types";
+import { localDate } from "@/lib/utils";
 
 function fmtDuration(mins: number) {
   if (mins < 60) return `${mins}m`;
@@ -32,7 +33,7 @@ function CalendarGrid({
 }) {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDate();
 
   const days: (number | null)[] = [
     ...Array(firstDay).fill(null),

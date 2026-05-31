@@ -15,7 +15,7 @@ import {
   Camera,
   Loader2,
 } from "lucide-react";
-import { calcTDEE } from "@/lib/utils";
+import { calcTDEE, localDate } from "@/lib/utils";
 import { DIET_PLANS, type DietPlan } from "@/lib/nutrition";
 
 // ---- Types ----
@@ -586,7 +586,7 @@ function ActivityPicker({
 
 // ---- Main page ----
 export default function NutritionPage() {
-  const [dateStr, setDateStr] = useState(() => new Date().toISOString().split("T")[0]);
+  const [dateStr, setDateStr] = useState(() => localDate());
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -683,10 +683,10 @@ export default function NutritionPage() {
   function shiftDate(days: number) {
     const d = new Date(dateStr + "T00:00:00");
     d.setDate(d.getDate() + days);
-    setDateStr(d.toISOString().split("T")[0]);
+    setDateStr(localDate(d));
   }
 
-  const isToday = dateStr === new Date().toISOString().split("T")[0];
+  const isToday = dateStr === localDate();
 
   async function deleteEntry(id: string) {
     await fetch(`/api/food/${id}`, { method: "DELETE" });

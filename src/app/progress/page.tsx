@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Trophy, TrendingUp, Dumbbell, Scale } from "lucide-react";
 import { PersonalRecord, WorkoutSession } from "@/lib/types";
 import VolumeChart, { WeekVolume } from "@/components/progress/VolumeChart";
+import { localDate } from "@/lib/utils";
 import WeightTrendChart from "@/components/WeightTrendChart";
 
 function getLastNWeeks(n: number): WeekVolume[] {
@@ -16,7 +17,7 @@ function getLastNWeeks(n: number): WeekVolume[] {
     const start = new Date(end);
     start.setDate(end.getDate() - 6);
     const label = `W${n - i}`;
-    weeks.push({ label, volumes: {}, _start: start.toISOString().split("T")[0], _end: end.toISOString().split("T")[0] } as any);
+    weeks.push({ label, volumes: {}, _start: localDate(start), _end: localDate(end) } as any);
   }
   return weeks;
 }

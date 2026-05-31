@@ -1,5 +1,7 @@
 "use client";
 
+import { localDate } from "@/lib/utils";
+
 interface WeightPoint {
   date: string;   // "YYYY-MM-DD"
   weightKg: number;
@@ -20,7 +22,7 @@ export default function WeightTrendChart({ logs, days = 28 }: Props) {
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const date = d.toISOString().split("T")[0];
+    const date = localDate(d);
     const label = i === 0 ? "วันนี้" : d.toLocaleDateString("th-TH", { day: "numeric", month: "short" });
     series.push({ date, label, w: byDate[date] ?? null });
   }
@@ -103,7 +105,7 @@ export default function WeightTrendChart({ logs, days = 28 }: Props) {
 
         {/* Data points (only recorded days) */}
         {recorded.map((p) => {
-          const isToday = p.date === new Date().toISOString().split("T")[0];
+          const isToday = p.date === localDate();
           return (
             <g key={p.date}>
               <circle

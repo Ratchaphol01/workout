@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { UtensilsCrossed, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { calcTDEE } from "@/lib/utils";
+import { calcTDEE, localDate } from "@/lib/utils";
 import { DIET_PLANS, type DietPlan } from "@/lib/nutrition";
 
 interface FoodEntry {
@@ -25,7 +25,7 @@ export default function NutritionSummary() {
   const [dietPlan, setDietPlan] = useState<DietPlan>("maintenance");
   const [avgWeight, setAvgWeight] = useState<number | null>(null);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDate();
 
   useEffect(() => {
     const savedActivity = localStorage.getItem("nutrition_activity");

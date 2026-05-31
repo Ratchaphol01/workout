@@ -7,6 +7,7 @@ import {
   getLast7DaysCalories,
   ALL_TYPES,
   WORKOUT_CHART_COLORS,
+  localDate,
 } from "@/lib/utils";
 import CalorieChart from "./CalorieChart";
 import StrengthProgress from "./StrengthProgress";
@@ -267,7 +268,7 @@ export default function Dashboard({
   const streak = calcStreak(entries);
   const chartData = getLast7DaysCalories(entries);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDate();
   const todayCalories = entries
     .filter((e) => e.date === todayStr)
     .reduce((s, e) => s + e.calories, 0);

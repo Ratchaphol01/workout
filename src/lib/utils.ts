@@ -1,5 +1,14 @@
 import { WorkoutEntry, WorkoutType } from "./types";
 
+// Use local calendar date (not UTC) so Thai users (UTC+7) get the right date
+export function localDate(date: Date = new Date()): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 // MET values from ACSM Compendium of Physical Activities
 const MET_VALUES: Record<WorkoutType, number> = {
   "Weight Training": 5.0,
@@ -110,7 +119,7 @@ export function getLast7DaysCalories(
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = localDate(d);
     const dayCalories = entries
       .filter((e) => e.date === dateStr)
       .reduce((sum, e) => sum + e.calories, 0);

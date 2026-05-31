@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlusCircle, ChevronDown, Plus, Trash2, Dumbbell } from "lucide-react";
 import { WorkoutType, WorkoutEntry, SetEntry } from "@/lib/types";
-import { calcCalories, genId, ALL_TYPES } from "@/lib/utils";
+import { calcCalories, genId, ALL_TYPES, localDate } from "@/lib/utils";
 
 interface Props {
   onSave: (entry: WorkoutEntry) => Promise<void>;
@@ -14,7 +14,7 @@ const DEFAULT_TYPE: WorkoutType = "Running";
 
 export default function WorkoutForm({ onSave, userWeightKg }: Props) {
   const [type, setType] = useState<WorkoutType>(DEFAULT_TYPE);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(localDate());
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -113,7 +113,7 @@ export default function WorkoutForm({ onSave, userWeightKg }: Props) {
               type="date"
               className="input"
               value={date}
-              max={new Date().toISOString().split("T")[0]}
+              max={localDate()}
               onChange={(e) => setDate(e.target.value)}
               required
             />
