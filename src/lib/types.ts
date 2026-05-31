@@ -5,6 +5,16 @@ export type WorkoutType =
   | "Swimming"
   | "Yoga"
   | "HIIT"
+  | "Football"
+  | "Basketball"
+  | "Badminton"
+  | "Tennis"
+  | "Volleyball"
+  | "Muay Thai"
+  | "Jump Rope"
+  | "Hiking"
+  | "Dancing"
+  | "Rowing"
   | "Other";
 
 export type SetType = "warm-up" | "working" | "drop" | "failure";

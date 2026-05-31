@@ -504,7 +504,7 @@ export default function WorkoutPage() {
               <div>
                 <p className="font-bold text-slate-800">คาร์ดิโอ</p>
                 <p className="text-xs text-slate-400 mt-0.5 leading-snug">
-                  วิ่ง · ปั่น · ว่ายน้ำ · HIIT
+                  วิ่ง · กีฬา · HIIT · และอื่นๆ
                 </p>
               </div>
             </button>
@@ -744,13 +744,33 @@ export default function WorkoutPage() {
 
 // ─── Cardio Quick Log ────────────────────────────────────────────────────────
 
-const CARDIO_TYPES: { type: WorkoutType; label: string; emoji: string; color: string }[] = [
-  { type: "Running",  label: "วิ่ง",      emoji: "🏃", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  { type: "Cycling",  label: "ปั่นจักรยาน", emoji: "🚴", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  { type: "Swimming", label: "ว่ายน้ำ",   emoji: "🏊", color: "bg-sky-100 text-sky-700 border-sky-200" },
-  { type: "HIIT",     label: "HIIT",      emoji: "⚡", color: "bg-red-100 text-red-700 border-red-200" },
-  { type: "Yoga",     label: "โยคะ",      emoji: "🧘", color: "bg-pink-100 text-pink-700 border-pink-200" },
-  { type: "Other",    label: "อื่นๆ",     emoji: "🎯", color: "bg-slate-100 text-slate-600 border-slate-200" },
+const CARDIO_TYPES: { type: WorkoutType; label: string; emoji: string; color: string; cat: "cardio" | "sport" | "other" }[] = [
+  // Cardio
+  { type: "Running",    label: "วิ่ง",          emoji: "🏃", color: "bg-emerald-100 text-emerald-700 border-emerald-200",  cat: "cardio" },
+  { type: "Cycling",    label: "ปั่นจักรยาน",   emoji: "🚴", color: "bg-orange-100 text-orange-700 border-orange-200",    cat: "cardio" },
+  { type: "Swimming",   label: "ว่ายน้ำ",        emoji: "🏊", color: "bg-sky-100 text-sky-700 border-sky-200",             cat: "cardio" },
+  { type: "Jump Rope",  label: "กระโดดเชือก",   emoji: "🪢", color: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200", cat: "cardio" },
+  { type: "Rowing",     label: "พายเรือ",        emoji: "🚣", color: "bg-indigo-100 text-indigo-700 border-indigo-200",    cat: "cardio" },
+  { type: "HIIT",       label: "HIIT",           emoji: "⚡", color: "bg-red-100 text-red-700 border-red-200",             cat: "cardio" },
+  // Sports
+  { type: "Football",   label: "ฟุตบอล",         emoji: "⚽", color: "bg-green-100 text-green-700 border-green-200",      cat: "sport" },
+  { type: "Basketball", label: "บาสเกตบอล",      emoji: "🏀", color: "bg-amber-100 text-amber-700 border-amber-200",      cat: "sport" },
+  { type: "Badminton",  label: "แบดมินตัน",      emoji: "🏸", color: "bg-teal-100 text-teal-700 border-teal-200",         cat: "sport" },
+  { type: "Tennis",     label: "เทนนิส",         emoji: "🎾", color: "bg-lime-100 text-lime-700 border-lime-200",          cat: "sport" },
+  { type: "Volleyball", label: "วอลเลย์บอล",    emoji: "🏐", color: "bg-cyan-100 text-cyan-700 border-cyan-200",          cat: "sport" },
+  { type: "Muay Thai",  label: "มวยไทย",         emoji: "🥊", color: "bg-rose-100 text-rose-700 border-rose-200",          cat: "sport" },
+  // Other
+  { type: "Hiking",     label: "เดินป่า",        emoji: "🥾", color: "bg-stone-100 text-stone-700 border-stone-200",      cat: "other" },
+  { type: "Dancing",    label: "เต้น",            emoji: "💃", color: "bg-purple-100 text-purple-700 border-purple-200",   cat: "other" },
+  { type: "Yoga",       label: "โยคะ",            emoji: "🧘", color: "bg-pink-100 text-pink-700 border-pink-200",         cat: "other" },
+  { type: "Other",      label: "อื่นๆ",           emoji: "🎯", color: "bg-slate-100 text-slate-600 border-slate-200",      cat: "other" },
+];
+
+const CARDIO_CATS: { key: "all" | "cardio" | "sport" | "other"; label: string }[] = [
+  { key: "all",    label: "ทั้งหมด" },
+  { key: "cardio", label: "คาร์ดิโอ" },
+  { key: "sport",  label: "กีฬา" },
+  { key: "other",  label: "อื่นๆ" },
 ];
 
 function CardioQuickLog({
@@ -763,6 +783,7 @@ function CardioQuickLog({
   onDone: () => void;
 }) {
   const [type, setType] = useState<WorkoutType>("Running");
+  const [cat, setCat] = useState<"all" | "cardio" | "sport" | "other">("all");
   const [duration, setDuration] = useState("");
   const [distance, setDistance] = useState("");
   const [pace, setPace] = useState("");
@@ -770,7 +791,8 @@ function CardioQuickLog({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const showDistance = type === "Running" || type === "Cycling";
+  const filteredTypes = cat === "all" ? CARDIO_TYPES : CARDIO_TYPES.filter((c) => c.cat === cat);
+  const showDistance = type === "Running" || type === "Cycling" || type === "Rowing";
   const dur = Number(duration);
   const calories = dur > 0 ? calcCalories(type, dur, userWeightKg ?? 70) : 0;
 
@@ -823,13 +845,30 @@ function CardioQuickLog({
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-800">คาร์ดิโอ</h1>
-            <p className="text-xs text-slate-400">บันทึกการออกกำลังกายแบบ cardio</p>
+            <p className="text-xs text-slate-400">คาร์ดิโอ · กีฬา · กิจกรรม</p>
           </div>
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {CARDIO_CATS.map((c) => (
+            <button
+              key={c.key}
+              onClick={() => setCat(c.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                cat === c.key
+                  ? "bg-emerald-500 text-white"
+                  : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
         </div>
 
         {/* Type selector */}
         <div className="grid grid-cols-3 gap-2">
-          {CARDIO_TYPES.map((c) => (
+          {filteredTypes.map((c) => (
             <button
               key={c.type}
               onClick={() => setType(c.type)}
