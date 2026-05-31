@@ -20,7 +20,11 @@ export default function WeightLogCard({ profileWeight, onAvgWeightChange }: Prop
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  // "วัน" เริ่มนับใหม่ตี 5 — ก่อนตี 5 ถือว่ายังเป็นเมื่อวาน
+  const now = new Date();
+  const logDate = new Date(now);
+  if (now.getHours() < 5) logDate.setDate(logDate.getDate() - 1);
+  const todayStr = logDate.toISOString().split("T")[0];
 
   const fetchLogs = useCallback(async () => {
     const res = await fetch("/api/weight?limit=14");
@@ -113,7 +117,7 @@ export default function WeightLogCard({ profileWeight, onAvgWeightChange }: Prop
           ) : (
             <div className="space-y-2">
               <p className="text-xs text-amber-600 font-medium">
-                ⏰ ยังไม่ได้บันทึกน้ำหนักวันนี้
+                ⏰ ชั่งน้ำหนักตอนเช้าแล้วหรือยัง?
               </p>
               <div className="flex gap-2">
                 <input
