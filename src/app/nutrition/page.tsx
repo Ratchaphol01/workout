@@ -12,6 +12,8 @@ import {
   Beef,
   Wheat,
   Droplets,
+  Camera,
+  Loader2,
 } from "lucide-react";
 import { calcTDEE } from "@/lib/utils";
 import { DIET_PLANS, type DietPlan } from "@/lib/nutrition";
@@ -89,12 +91,60 @@ function AddFoodModal({
   const [fat, setFat] = useState("");
   const [amount, setAmount] = useState("");
   const [saving, setSaving] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
   const [tab, setTab] = useState<"search" | "custom">("search");
   const [query, setQuery] = useState("");
 
   const filtered = FOOD_PRESETS.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase())
   );
+
+  async function handleImageFile(file: File) {
+    if (!file) return;
+    setScanError("");
+    setScanning(true);
+    setTab("custom");
+
+    // Show preview
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+
+    try {
+      // Convert to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Strip data URL prefix
+          resolve(result.split(",")[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch("/api/food/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64, mimeType: file.type }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "ไม่สำเร็จ");
+
+      setName(data.name ?? "");
+      setCalories(data.calories ? String(data.calories) : "");
+      setProtein(data.protein ? String(data.protein) : "");
+      setCarbs(data.carbs ? String(data.carbs) : "");
+      setFat(data.fat ? String(data.fat) : "");
+      setAmount(data.amount ?? "");
+    } catch (e) {
+      setScanError(e instanceof Error ? e.message : "วิเคราะห์รูปไม่สำเร็จ");
+    } finally {
+      setScanning(false);
+    }
+  }
 
   function fillPreset(p: (typeof FOOD_PRESETS)[0]) {
     setName(p.name);
@@ -133,9 +183,39 @@ function AddFoodModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="font-bold text-slate-800">เพิ่มอาหาร</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Camera scan button */}
+            <label className="relative cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageFile(file);
+                  e.target.value = "";
+                }}
+              />
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+                  scanning
+                    ? "bg-violet-100 text-violet-500 cursor-wait"
+                    : "bg-violet-50 hover:bg-violet-100 text-violet-600"
+                }`}
+              >
+                {scanning ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Camera size={14} />
+                )}
+                {scanning ? "กำลังวิเคราะห์..." : "ถ่ายรูป AI"}
+              </div>
+            </label>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -184,6 +264,38 @@ function AddFoodModal({
             </div>
           ) : (
             <div className="p-4 space-y-4">
+              {/* Scan preview / loading */}
+              {scanning && (
+                <div className="flex flex-col items-center justify-center gap-3 py-6 bg-violet-50 rounded-2xl">
+                  <Loader2 size={28} className="animate-spin text-violet-500" />
+                  <p className="text-sm font-medium text-violet-600">AI กำลังวิเคราะห์รูปอาหาร...</p>
+                </div>
+              )}
+              {!scanning && previewUrl && (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="food preview"
+                    className="w-full h-36 object-cover rounded-xl"
+                  />
+                  <div className="absolute top-2 right-2 bg-violet-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    AI
+                  </div>
+                  <button
+                    onClick={() => { setPreviewUrl(""); }}
+                    className="absolute top-2 left-2 bg-black/40 text-white rounded-full p-1"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+              {scanError && (
+                <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 text-sm text-red-500">
+                  {scanError}
+                </div>
+              )}
+
               {/* Meal type */}
               <div className="grid grid-cols-4 gap-2">
                 {MEAL_ORDER.map((m) => (
