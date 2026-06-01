@@ -14,7 +14,7 @@ export async function signToken(payload: AuthPayload): Promise<string> {
   return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime("30d")
     .sign(secret());
 }
 
@@ -40,6 +40,6 @@ export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
-  maxAge: 60 * 60 * 24 * 7,
+  maxAge: 60 * 60 * 24 * 30,
   path: "/",
 };
