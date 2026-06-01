@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const prompt = `วิเคราะห์อาหารในรูปนี้และตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น
 
