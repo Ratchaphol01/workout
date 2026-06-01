@@ -54,20 +54,29 @@ export default function Home() {
         const u = d.user as AuthUser;
         setAuthUser(u);
         if (!u.profileComplete) { router.push("/profile/setup"); return; }
-        fetchWorkouts();
       })
       .catch(() => router.push("/login"))
       .finally(() => { clearTimeout(failsafe); setLoading(false); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch workouts whenever user navigates back to this tab
+  // Fetch on every mount (covers in-app navigation) + re-fetch on window focus / tab switch
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible") fetchWorkouts();
-    };
+    fetchWorkouts();
+
+    const onFocus = () => fetchWorkouts();
+    const onVisible = () => { if (document.visibilityState === "visible") fetchWorkouts(); };
+    const onPageShow = (e: PageTransitionEvent) => { if (e.persisted) fetchWorkouts(); };
+
+    window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onPageShow);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, [fetchWorkouts]);
 
   const handleUpdateWeight = useCallback(async (weight: number) => {
