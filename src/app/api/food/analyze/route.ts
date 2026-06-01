@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
+    return NextResponse.json({ error: "ยังไม่ได้ตั้งค่า GEMINI_API_KEY ใน Vercel Environment Variables" }, { status: 500 });
   }
 
   const body = await request.json();
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `วิเคราะห์อาหารในรูปนี้และตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น
 
@@ -60,8 +60,12 @@ export async function POST(request: NextRequest) {
       carbs: Math.round(Number(data.carbs) || 0),
       fat: Math.round(Number(data.fat) || 0),
     });
-  } catch (err) {
-    console.error("Gemini analyze error:", err);
-    return NextResponse.json({ error: "วิเคราะห์รูปไม่สำเร็จ กรุณาลองใหม่" }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Gemini analyze error:", msg);
+    return NextResponse.json(
+      { error: `วิเคราะห์รูปไม่สำเร็จ: ${msg.slice(0, 120)}` },
+      { status: 500 }
+    );
   }
 }
