@@ -61,6 +61,15 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Re-fetch workouts whenever user navigates back to this tab
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchWorkouts();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [fetchWorkouts]);
+
   const handleUpdateWeight = useCallback(async (weight: number) => {
     const res = await fetch("/api/profile", {
       method: "PUT",
