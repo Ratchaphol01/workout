@@ -264,14 +264,13 @@ export default function Dashboard({
   weightUpdatedAt?: string;
   onUpdateWeight: () => void;
 }) {
-  const totalMinutes = entries.reduce((s, e) => s + e.duration, 0);
+  const todayStr = localDate();
+  const todayEntries = entries.filter((e) => e.date === todayStr);
+
+  const totalMinutes = todayEntries.reduce((s, e) => s + e.duration, 0);
+  const todayCalories = todayEntries.reduce((s, e) => s + e.calories, 0);
   const streak = calcStreak(entries);
   const chartData = getLast7DaysCalories(entries);
-
-  const todayStr = localDate();
-  const todayCalories = entries
-    .filter((e) => e.date === todayStr)
-    .reduce((s, e) => s + e.calories, 0);
 
   return (
     <div className="space-y-5">
@@ -287,10 +286,10 @@ export default function Dashboard({
           <div className="flex items-center gap-2 mb-4">
             <Flame size={16} className="text-orange-400" />
             <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
-              Total Calories
+              แคลอรีวันนี้
             </h2>
           </div>
-          <CalorieDonut entries={entries} />
+          <CalorieDonut entries={todayEntries} />
         </div>
 
         {/* Time + Streak stacked */}
