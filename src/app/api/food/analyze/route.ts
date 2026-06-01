@@ -59,8 +59,10 @@ export async function POST(request: NextRequest) {
 
     const json = await res.json();
     const text: string = json.choices?.[0]?.message?.content ?? "";
-    const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-    const data = JSON.parse(clean);
+    // Extract first JSON object from text (handles extra prose before/after)
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error(`ไม่พบ JSON ในคำตอบ: "${text.slice(0, 100)}"`);
+    const data = JSON.parse(match[0]);
 
     return NextResponse.json({
       name: String(data.name ?? ""),

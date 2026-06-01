@@ -101,6 +101,31 @@ function AddFoodModal({
     f.name.toLowerCase().includes(query.toLowerCase())
   );
 
+  // Compress + convert any image (including HEIC) to JPEG via canvas
+  function compressToJpeg(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        const MAX = 1024;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height / width) * MAX); width = MAX; }
+          else { width = Math.round((width / height) * MAX); height = MAX; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(objUrl);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve(dataUrl.split(",")[1]);
+      };
+      img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error("โหลดรูปไม่สำเร็จ")); };
+      img.src = objUrl;
+    });
+  }
+
   async function handleImageFile(file: File) {
     if (!file) return;
     setScanError("");
@@ -112,22 +137,13 @@ function AddFoodModal({
     setPreviewUrl(url);
 
     try {
-      // Convert to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Strip data URL prefix
-          resolve(result.split(",")[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Compress + convert to JPEG (handles HEIC, large photos, unknown types)
+      const base64 = await compressToJpeg(file);
 
       const res = await fetch("/api/food/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base64, mimeType: file.type }),
+        body: JSON.stringify({ base64, mimeType: "image/jpeg" }),
       });
 
       const data = await res.json();
