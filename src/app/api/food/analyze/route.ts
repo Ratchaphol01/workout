@@ -29,14 +29,17 @@ async function callGemini(apiKey: string, model: string, base64: string, mimeTyp
     generationConfig: { temperature: 0.2 },
   };
 
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
   // AQ. prefix = OAuth token → Bearer auth; AIza prefix = API key → x-goog-api-key
-  const authHeader = apiKey.startsWith("AIza")
-    ? { "x-goog-api-key": apiKey }
-    : { "Authorization": `Bearer ${apiKey}` };
+  if (apiKey.startsWith("AIza")) {
+    headers["x-goog-api-key"] = apiKey;
+  } else {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  }
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeader },
+    headers,
     body: JSON.stringify(body),
   });
 
