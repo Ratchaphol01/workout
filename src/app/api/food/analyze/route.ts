@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
     const prompt = `วิเคราะห์อาหารในรูปนี้และตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("Gemini analyze error:", msg);
     return NextResponse.json(
-      { error: `วิเคราะห์รูปไม่สำเร็จ: ${msg.slice(0, 120)}` },
+      { error: `วิเคราะห์รูปไม่สำเร็จ: ${msg.slice(0, 300)}` },
       { status: 500 }
     );
   }
