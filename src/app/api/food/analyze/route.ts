@@ -29,12 +29,14 @@ async function callGemini(apiKey: string, model: string, base64: string, mimeTyp
     generationConfig: { temperature: 0.2 },
   };
 
+  // AQ. prefix = OAuth token → Bearer auth; AIza prefix = API key → x-goog-api-key
+  const authHeader = apiKey.startsWith("AIza")
+    ? { "x-goog-api-key": apiKey }
+    : { "Authorization": `Bearer ${apiKey}` };
+
   const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
+    headers: { "Content-Type": "application/json", ...authHeader },
     body: JSON.stringify(body),
   });
 
