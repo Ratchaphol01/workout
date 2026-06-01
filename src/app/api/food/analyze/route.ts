@@ -6,9 +6,12 @@ export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json({ error: "ยังไม่ได้ตั้งค่า GEMINI_API_KEY ใน Vercel Environment Variables" }, { status: 500 });
+  }
+  if (!apiKey.startsWith("AIza")) {
+    return NextResponse.json({ error: `API key ดูไม่ถูกต้อง (ควรขึ้นต้นด้วย AIza) ค่าที่ได้: "${apiKey.slice(0, 8)}..."` }, { status: 500 });
   }
 
   const body = await request.json();
