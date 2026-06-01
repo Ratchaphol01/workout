@@ -1,63 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 
-const PROMPT = `วิเคราะห์อาหารในรูปนี้และตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น
-
-ตอบในรูปแบบ:
-{
-  "name": "ชื่ออาหารภาษาไทย",
-  "amount": "ปริมาณโดยประมาณ เช่น 1 จาน / 200g",
-  "calories": 0,
-  "protein": 0,
-  "carbs": 0,
-  "fat": 0
-}
-
-หากไม่แน่ใจ ให้ประมาณค่าตามปริมาณที่เห็นในรูป ค่าโปรตีน/คาร์บ/ไขมัน เป็นหน่วย กรัม`;
-
-// Try a model via direct REST — returns parsed JSON or throws with status text
-async function callGemini(apiKey: string, model: string, base64: string, mimeType: string) {
-  // Try as x-goog-api-key header (works for AIza... and AQ... keys)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  const body = {
-    contents: [{
-      parts: [
-        { text: PROMPT },
-        { inline_data: { mime_type: mimeType, data: base64 } },
-      ],
-    }],
-    generationConfig: { temperature: 0.2 },
-  };
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  // AQ. prefix = OAuth token → Bearer auth; AIza prefix = API key → x-goog-api-key
-  if (apiKey.startsWith("AIza")) {
-    headers["x-goog-api-key"] = apiKey;
-  } else {
-    headers["Authorization"] = `Bearer ${apiKey}`;
-  }
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`[${res.status}] ${errText.slice(0, 300)}`);
-  }
-  return res.json();
-}
-
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = process.env.GROQ_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
-      { error: "ยังไม่ได้ตั้งค่า GEMINI_API_KEY ใน Vercel Environment Variables" },
+      { error: "ยังไม่ได้ตั้งค่า GROQ_API_KEY ใน Vercel Environment Variables" },
       { status: 500 }
     );
   }
@@ -68,34 +19,63 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "base64 and mimeType required" }, { status: 400 });
   }
 
-  // Try models in order until one works
-  const models = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-pro-vision"];
-  let lastErr = "";
+  const prompt = `วิเคราะห์อาหารในรูปนี้และตอบเป็น JSON เท่านั้น ไม่ต้องมีข้อความอื่น
 
-  for (const model of models) {
-    try {
-      const json = await callGemini(apiKey, model, base64, mimeType);
-      const text: string = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-      const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-      const data = JSON.parse(clean);
-      return NextResponse.json({
-        name: String(data.name ?? ""),
-        amount: String(data.amount ?? ""),
-        calories: Math.round(Number(data.calories) || 0),
-        protein: Math.round(Number(data.protein) || 0),
-        carbs: Math.round(Number(data.carbs) || 0),
-        fat: Math.round(Number(data.fat) || 0),
-      });
-    } catch (err: unknown) {
-      lastErr = err instanceof Error ? err.message : String(err);
-      // If it's not a 404 (model not found), stop trying other models
-      if (!lastErr.includes("[404]")) break;
+ตอบในรูปแบบนี้เท่านั้น:
+{"name":"ชื่ออาหารภาษาไทย","amount":"ปริมาณ เช่น 1 จาน / 200g","calories":0,"protein":0,"carbs":0,"fat":0}
+
+ค่าโปรตีน/คาร์บ/ไขมัน เป็นหน่วยกรัม ประมาณค่าตามปริมาณที่เห็นในรูป`;
+
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64}` },
+              },
+            ],
+          },
+        ],
+        max_tokens: 256,
+        temperature: 0.1,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`[${res.status}] ${errText.slice(0, 300)}`);
     }
-  }
 
-  console.error("Gemini analyze error:", lastErr);
-  return NextResponse.json(
-    { error: `วิเคราะห์รูปไม่สำเร็จ: ${lastErr.slice(0, 300)}` },
-    { status: 500 }
-  );
+    const json = await res.json();
+    const text: string = json.choices?.[0]?.message?.content ?? "";
+    const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const data = JSON.parse(clean);
+
+    return NextResponse.json({
+      name: String(data.name ?? ""),
+      amount: String(data.amount ?? ""),
+      calories: Math.round(Number(data.calories) || 0),
+      protein: Math.round(Number(data.protein) || 0),
+      carbs: Math.round(Number(data.carbs) || 0),
+      fat: Math.round(Number(data.fat) || 0),
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Groq analyze error:", msg);
+    return NextResponse.json(
+      { error: `วิเคราะห์รูปไม่สำเร็จ: ${msg.slice(0, 300)}` },
+      { status: 500 }
+    );
+  }
 }
