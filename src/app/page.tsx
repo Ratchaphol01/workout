@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Dumbbell, LogOut, User } from "lucide-react";
 import { WorkoutEntry } from "@/lib/types";
+import { calcCalories } from "@/lib/utils";
 import Dashboard from "@/components/Dashboard";
 import WeightUpdateModal from "@/components/WeightUpdateModal";
 
@@ -38,13 +39,13 @@ export default function Home() {
 
       // Merge strength sessions as WorkoutEntry so the dashboard donut includes them
       const sessionEntries = (sessionData.sessions ?? [])
-        .filter((s: { totalCalories?: number }) => (s.totalCalories ?? 0) > 0)
-        .map((s: { _id: string; date: string; duration?: number; totalCalories: number }) => ({
+        .filter((s: { duration?: number }) => (s.duration ?? 0) > 0)
+        .map((s: { _id: string; date: string; duration?: number; totalCalories?: number }) => ({
           id: s._id,
           date: s.date,
           type: "Weight Training" as const,
           duration: s.duration ?? 0,
-          calories: s.totalCalories,
+          calories: s.totalCalories ?? calcCalories("Weight Training", s.duration ?? 0, authUser?.weight ?? 70),
         }));
 
       setEntries([...workoutData.workouts, ...sessionEntries]);
