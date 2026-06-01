@@ -41,14 +41,18 @@ export default function NutritionSummary() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d?.profile) setProfile(d.profile); });
 
-    fetch("/api/workouts")
-      .then((r) => (r.ok ? r.json() : { workouts: [] }))
-      .then((d) => {
-        const b = (d.workouts ?? [])
-          .filter((w: { date: string; calories: number }) => w.date === todayStr)
-          .reduce((s: number, w: { calories: number }) => s + (w.calories ?? 0), 0);
-        setBurned(b);
-      });
+    Promise.all([
+      fetch("/api/workouts").then((r) => (r.ok ? r.json() : { workouts: [] })),
+      fetch("/api/sessions?limit=10").then((r) => (r.ok ? r.json() : { sessions: [] })),
+    ]).then(([workoutData, sessionData]) => {
+      const workoutCal = (workoutData.workouts ?? [])
+        .filter((w: { date: string; calories: number }) => w.date === todayStr)
+        .reduce((s: number, w: { calories: number }) => s + (w.calories ?? 0), 0);
+      const sessionCal = (sessionData.sessions ?? [])
+        .filter((s: { date: string; totalCalories?: number }) => s.date === todayStr)
+        .reduce((s: number, w: { totalCalories?: number }) => s + (w.totalCalories ?? 0), 0);
+      setBurned(workoutCal + sessionCal);
+    });
 
     fetch("/api/weight?limit=7")
       .then((r) => (r.ok ? r.json() : { logs: [] }))

@@ -28,10 +28,26 @@ export default function Home() {
 
   const fetchWorkouts = useCallback(async () => {
     try {
-      const res = await fetch("/api/workouts");
-      if (!res.ok) return;
-      const data = await res.json();
-      setEntries(data.workouts);
+      const [workoutRes, sessionRes] = await Promise.all([
+        fetch("/api/workouts"),
+        fetch("/api/sessions?limit=30"),
+      ]);
+      if (!workoutRes.ok) return;
+      const workoutData = await workoutRes.json();
+      const sessionData = sessionRes.ok ? await sessionRes.json() : { sessions: [] };
+
+      // Merge strength sessions as WorkoutEntry so the dashboard donut includes them
+      const sessionEntries = (sessionData.sessions ?? [])
+        .filter((s: { totalCalories?: number }) => (s.totalCalories ?? 0) > 0)
+        .map((s: { _id: string; date: string; duration?: number; totalCalories: number }) => ({
+          id: s._id,
+          date: s.date,
+          type: "Weight Training" as const,
+          duration: s.duration ?? 0,
+          calories: s.totalCalories,
+        }));
+
+      setEntries([...workoutData.workouts, ...sessionEntries]);
     } catch {
       // silent
     }

@@ -68,6 +68,7 @@ export default function WorkoutPage() {
   const [saving, setSaving] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [workoutMode, setWorkoutMode] = useState<"weights" | "cardio" | null>(null);
+  const [userWeightKg, setUserWeightKg] = useState<number | undefined>(undefined);
 
   // Load initial data
   useEffect(() => {
@@ -99,6 +100,11 @@ export default function WorkoutPage() {
       .then((d) => {
         if (d.routines) setRoutines(d.routines);
       })
+      .catch(() => {});
+
+    fetch("/api/profile")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.profile?.weight) setUserWeightKg(d.profile.weight); })
       .catch(() => {});
 
     // Restore in-progress session
@@ -361,17 +367,19 @@ export default function WorkoutPage() {
       .filter((ex) => ex.sets.length > 0);
 
     try {
+      const totalCalories = calcCalories("Weight Training", duration, userWeightKg ?? 70);
       await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: session.startedAt.split("T")[0],
+          date: localDate(new Date(session.startedAt)),
           startedAt: session.startedAt,
           finishedAt,
           duration,
           exercises,
           notes: session.notes,
           totalVolume,
+          totalCalories,
         }),
       });
       localStorage.removeItem(SESSION_KEY);
@@ -398,7 +406,7 @@ export default function WorkoutPage() {
     if (workoutMode === "cardio") {
       return (
         <CardioQuickLog
-          userWeightKg={undefined}
+          userWeightKg={userWeightKg}
           onBack={() => setWorkoutMode(null)}
           onDone={() => router.push("/history")}
         />

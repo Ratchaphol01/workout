@@ -624,16 +624,20 @@ export default function NutritionPage() {
       });
   }, []);
 
-  // Load burned calories from workouts today
+  // Load burned calories from workouts + strength sessions today
   useEffect(() => {
-    fetch("/api/workouts")
-      .then((r) => (r.ok ? r.json() : { workouts: [] }))
-      .then((d) => {
-        const todayBurned = (d.workouts ?? [])
-          .filter((w: { date: string; calories: number }) => w.date === dateStr)
-          .reduce((s: number, w: { calories: number }) => s + (w.calories ?? 0), 0);
-        setBurnedToday(todayBurned);
-      });
+    Promise.all([
+      fetch("/api/workouts").then((r) => (r.ok ? r.json() : { workouts: [] })),
+      fetch("/api/sessions?limit=10").then((r) => (r.ok ? r.json() : { sessions: [] })),
+    ]).then(([workoutData, sessionData]) => {
+      const workoutCal = (workoutData.workouts ?? [])
+        .filter((w: { date: string; calories: number }) => w.date === dateStr)
+        .reduce((s: number, w: { calories: number }) => s + (w.calories ?? 0), 0);
+      const sessionCal = (sessionData.sessions ?? [])
+        .filter((s: { date: string; totalCalories?: number }) => s.date === dateStr)
+        .reduce((s: number, w: { totalCalories?: number }) => s + (w.totalCalories ?? 0), 0);
+      setBurnedToday(workoutCal + sessionCal);
+    });
   }, [dateStr]);
 
   useEffect(() => {
