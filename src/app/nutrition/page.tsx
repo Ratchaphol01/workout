@@ -162,6 +162,32 @@ function AddFoodModal({
     }
   }
 
+  async function handleMenuText(text: string) {
+    if (!text.trim()) return;
+    setScanError("");
+    setScanning(true);
+    setTab("custom");
+    try {
+      const res = await fetch("/api/food/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menuText: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "ไม่สำเร็จ");
+      setName(data.name ?? "");
+      setCalories(data.calories ? String(data.calories) : "");
+      setProtein(data.protein ? String(data.protein) : "");
+      setCarbs(data.carbs ? String(data.carbs) : "");
+      setFat(data.fat ? String(data.fat) : "");
+      setAmount(data.amount ?? "");
+    } catch (e) {
+      setScanError(e instanceof Error ? e.message : "วิเคราะห์ไม่สำเร็จ");
+    } finally {
+      setScanning(false);
+    }
+  }
+
   function fillPreset(p: (typeof FOOD_PRESETS)[0]) {
     setName(p.name);
     setCalories(String(p.calories));
@@ -234,6 +260,35 @@ function AddFoodModal({
           </div>
         </div>
 
+        {/* AI text search bar */}
+        <div className="px-4 pt-3 pb-2 border-b border-slate-100 shrink-0">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const input = (e.currentTarget.elements.namedItem("menuText") as HTMLInputElement);
+              handleMenuText(input.value);
+              input.value = "";
+            }}
+            className="flex gap-2"
+          >
+            <input
+              name="menuText"
+              type="text"
+              placeholder="พิมชื่อเมนู เช่น ข้าวผัดหมู..."
+              className="input flex-1 text-sm py-2"
+              disabled={scanning}
+            />
+            <button
+              type="submit"
+              disabled={scanning}
+              className="shrink-0 px-3 py-2 rounded-xl bg-violet-500 hover:bg-violet-600 text-white text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              {scanning ? <Loader2 size={13} className="animate-spin" /> : "AI คำนวณ"}
+            </button>
+          </form>
+          {scanError && <p className="text-xs text-red-500 mt-1.5">{scanError}</p>}
+        </div>
+
         {/* Tabs */}
         <div className="flex border-b border-slate-100 shrink-0">
           {(["search", "custom"] as const).map((t) => (
@@ -304,11 +359,6 @@ function AddFoodModal({
                   >
                     <X size={12} />
                   </button>
-                </div>
-              )}
-              {scanError && (
-                <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 text-sm text-red-500">
-                  {scanError}
                 </div>
               )}
 
