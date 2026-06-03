@@ -35,6 +35,7 @@ export async function PUT(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const update: Record<string, any> = {};
 
+  if (body.name) update.name = String(body.name).trim();
   if (body.weight !== undefined && body.weight !== "") {
     update.weight = Number(body.weight);
     update.weightUpdatedAt = new Date();

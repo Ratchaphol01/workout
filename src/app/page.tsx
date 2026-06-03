@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Dumbbell, LogOut, User } from "lucide-react";
+import Link from "next/link";
+import { Dumbbell, User } from "lucide-react";
 import { WorkoutEntry } from "@/lib/types";
 import { calcCalories } from "@/lib/utils";
 import Dashboard from "@/components/Dashboard";
@@ -116,11 +117,6 @@ export default function Home() {
     }
   }, []);
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
 
   if (loading) {
     return (
@@ -149,22 +145,20 @@ export default function Home() {
 
           <div className="flex items-center gap-2 ml-auto shrink-0">
             {authUser && (
-              <div className="hidden md:flex items-center gap-1.5 text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">
-                <User size={14} />
+              <span className="hidden md:flex items-center gap-1.5 text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">
                 <span className="font-medium">{authUser.name}</span>
                 {authUser.weight && (
                   <span className="text-slate-400">· {authUser.weight} kg</span>
                 )}
-              </div>
+              </span>
             )}
-            <button
-              onClick={handleLogout}
-              className="btn-ghost text-sm flex items-center gap-1.5 !px-3 !py-1.5 text-slate-500"
-              title="ออกจากระบบ"
+            <Link
+              href="/profile"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+              title="โปรไฟล์ & ตั้งค่า"
             >
-              <LogOut size={15} />
-              <span className="hidden sm:inline">ออก</span>
-            </button>
+              <User size={19} />
+            </Link>
           </div>
         </div>
       </header>
