@@ -780,14 +780,50 @@ export default function NutritionPage() {
           >
             ตั้งค่า TDEE
           </button>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-xl transition-colors"
-          >
-            <Plus size={15} />
-            เพิ่มอาหาร
-          </button>
+          {isToday && (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-xl transition-colors"
+            >
+              <Plus size={15} />
+              เพิ่มอาหาร
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Date navigation */}
+      <div className="flex items-center justify-between bg-white rounded-2xl px-4 py-2.5 shadow-sm border border-slate-100">
+        <button
+          onClick={() => shiftDate(-1)}
+          className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          <ChevronLeft size={18} className="text-slate-500" />
+        </button>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-slate-800">
+            {isToday
+              ? "วันนี้"
+              : new Date(dateStr + "T00:00:00").toLocaleDateString("th-TH", {
+                  weekday: "short", day: "numeric", month: "short",
+                })}
+          </p>
+          {!isToday && (
+            <button
+              onClick={() => setDateStr(localDate())}
+              className="text-[10px] text-orange-500 font-medium hover:underline"
+            >
+              กลับวันนี้
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => shiftDate(1)}
+          disabled={isToday}
+          className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-30"
+        >
+          <ChevronRight size={18} className="text-slate-500" />
+        </button>
       </div>
 
       {/* Diet plan selector */}
