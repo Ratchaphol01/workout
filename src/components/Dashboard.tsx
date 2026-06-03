@@ -13,6 +13,7 @@ import CalorieChart from "./CalorieChart";
 import StrengthProgress from "./StrengthProgress";
 import NutritionSummary from "./NutritionSummary";
 import WeightLogCard from "./WeightLogCard";
+import WeeklySummary from "./WeeklySummary";
 
 // --- Weekly reminder banner ---
 function WeightReminderBanner({
@@ -333,7 +334,10 @@ export default function Dashboard({
         <CalorieChart data={chartData} />
       </div>
 
-      {/* Row 3: Daily weight log */}
+      {/* Row 3: Weekly summary */}
+      <WeeklySummary />
+
+      {/* Row 4: Daily weight log */}
       <WeightLogCard profileWeight={weightKg} />
 
       {/* Row 4: Strength progress */}

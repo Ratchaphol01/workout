@@ -9,15 +9,20 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const date = request.nextUrl.searchParams.get("date");
-  if (!date) return NextResponse.json({ error: "date required" }, { status: 400 });
+  const start = request.nextUrl.searchParams.get("start");
+  const end = request.nextUrl.searchParams.get("end");
+
+  if (!date && !(start && end))
+    return NextResponse.json({ error: "date or start+end required" }, { status: 400 });
 
   await connectDB();
 
-  const entries = await FoodEntry.find({
-    userId: new Types.ObjectId(user.userId),
-    date,
-  })
-    .sort({ createdAt: 1 })
+  const query: Record<string, unknown> = { userId: new Types.ObjectId(user.userId) };
+  if (date) query.date = date;
+  else query.date = { $gte: start, $lte: end };
+
+  const entries = await FoodEntry.find(query)
+    .sort({ date: 1, createdAt: 1 })
     .lean();
 
   return NextResponse.json({ entries });
