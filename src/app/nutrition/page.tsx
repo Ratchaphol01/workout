@@ -471,13 +471,14 @@ function CalorieRing({
   burned: number;
   target: number;
 }) {
-  const remaining = Math.max(0, target - eaten + burned);
-  const net = eaten - burned;
-  const pct = Math.min(1, net / target);
+  // budget = target + burned (extra workout calories extend daily budget)
+  const budget = target + burned;
+  const remaining = Math.max(0, budget - eaten);
+  const pct = Math.min(1, eaten / budget);
   const R = 60;
   const C = 2 * Math.PI * R;
   const filled = pct * C;
-  const overEaten = net > target;
+  const overEaten = eaten > budget;
 
   return (
     <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -505,12 +506,12 @@ function CalorieRing({
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — budget = target + burned, so budget - eaten = remaining */}
       <div className="grid grid-cols-3 gap-4 flex-1 w-full">
         <div className="text-center">
-          <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">เป้าหมาย</p>
-          <p className="text-xl font-bold text-slate-800 tabular-nums">{target.toLocaleString()}</p>
-          <p className="text-[10px] text-slate-400">kcal</p>
+          <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">budget</p>
+          <p className="text-xl font-bold text-slate-800 tabular-nums">{budget.toLocaleString()}</p>
+          <p className="text-[10px] text-slate-400">เป้า{burned > 0 ? `+เผา` : ""}</p>
         </div>
         <div className="text-center">
           <p className="text-[11px] text-orange-400 font-medium uppercase tracking-wide">กิน</p>

@@ -75,9 +75,10 @@ export default function NutritionSummary() {
 
   const planCfg = DIET_PLANS[dietPlan];
   const calorieTarget = tdee + planCfg.calAdj;
-  const remaining = Math.max(0, calorieTarget - eaten + burned);
-  const pct = Math.min(1, (eaten - burned) / calorieTarget);
-  const overEaten = eaten - burned > calorieTarget;
+  const budget = calorieTarget + burned;
+  const remaining = Math.max(0, budget - eaten);
+  const pct = Math.min(1, eaten / budget);
+  const overEaten = eaten > budget;
 
   const R = 28;
   const C = 2 * Math.PI * R;
