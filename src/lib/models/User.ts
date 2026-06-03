@@ -1,6 +1,12 @@
 import mongoose, { Schema, Model, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
+export interface INotificationPrefs {
+  weighIn: boolean;       // 7:00 ชั่งน้ำหนักตอนเช้า
+  foodLog: boolean;       // 20:00 บันทึกอาหาร (ถ้ายังไม่ได้บันทึก)
+  workoutStreak: boolean; // 18:00 รักษา streak (ถ้ายังไม่ได้ออกกำลัง)
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -11,6 +17,7 @@ export interface IUser extends Document {
   gender?: "male" | "female" | "other";
   profileComplete: boolean;
   weightUpdatedAt?: Date;
+  notificationPrefs?: INotificationPrefs;
   createdAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -31,6 +38,11 @@ const userSchema = new Schema<IUser>({
   gender: { type: String, enum: ["male", "female", "other"] },
   profileComplete: { type: Boolean, default: false },
   weightUpdatedAt: { type: Date },
+  notificationPrefs: {
+    weighIn:       { type: Boolean, default: true },
+    foodLog:       { type: Boolean, default: true },
+    workoutStreak: { type: Boolean, default: true },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

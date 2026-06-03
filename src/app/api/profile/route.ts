@@ -21,6 +21,7 @@ export async function GET() {
       gender: user.gender,
       profileComplete: user.profileComplete,
       weightUpdatedAt: user.weightUpdatedAt,
+      notificationPrefs: user.notificationPrefs,
     },
   });
 }
@@ -47,8 +48,12 @@ export async function PUT(request: NextRequest) {
     update.age = Number(body.age);
   }
   if (body.gender) update.gender = body.gender;
-  if (body.profileComplete !== undefined) {
-    update.profileComplete = body.profileComplete;
+  if (body.profileComplete !== undefined) update.profileComplete = body.profileComplete;
+  if (body.notificationPrefs) {
+    const p = body.notificationPrefs;
+    if (typeof p.weighIn === "boolean")       update["notificationPrefs.weighIn"] = p.weighIn;
+    if (typeof p.foodLog === "boolean")       update["notificationPrefs.foodLog"] = p.foodLog;
+    if (typeof p.workoutStreak === "boolean") update["notificationPrefs.workoutStreak"] = p.workoutStreak;
   }
 
   const user = await User.findByIdAndUpdate(
@@ -67,6 +72,7 @@ export async function PUT(request: NextRequest) {
       gender: user?.gender,
       profileComplete: user?.profileComplete,
       weightUpdatedAt: user?.weightUpdatedAt,
+      notificationPrefs: user?.notificationPrefs,
     },
   });
 }
