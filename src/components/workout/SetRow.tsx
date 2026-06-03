@@ -4,11 +4,11 @@ import { Trash2, Check } from "lucide-react";
 import { ActiveSet, SetType } from "@/lib/types";
 import { calc1RM } from "@/lib/exercises";
 
-const SET_TYPE_CONFIG: Record<SetType, { label: string; cls: string }> = {
-  "warm-up": { label: "W",  cls: "bg-amber-100 text-amber-700" },
-  "working":  { label: "S",  cls: "bg-sky-100 text-sky-700" },
-  "drop":     { label: "D",  cls: "bg-orange-100 text-orange-700" },
-  "failure":  { label: "F",  cls: "bg-red-100 text-red-700" },
+const SET_TYPE_CONFIG: Record<SetType, { label: string; cls: string; title: string }> = {
+  "warm-up": { label: "W", cls: "bg-amber-100 text-amber-700",  title: "W = Warm-up (อุ่นเครื่อง)" },
+  "working":  { label: "S", cls: "bg-sky-100 text-sky-700",     title: "S = Standard (เซ็ตหลัก)" },
+  "drop":     { label: "D", cls: "bg-orange-100 text-orange-700", title: "D = Drop set (ลดน้ำหนักทำต่อ)" },
+  "failure":  { label: "F", cls: "bg-red-100 text-red-700",     title: "F = Failure (ทำจนหมดแรง)" },
 };
 
 const CYCLE: SetType[] = ["warm-up", "working", "drop", "failure"];
@@ -54,7 +54,7 @@ export default function SetRow({
       <button
         type="button"
         onClick={cycleType}
-        title={set.type}
+        title={cfg.title}
         className={`text-[10px] font-bold px-1 py-1 rounded-md w-full transition-colors ${cfg.cls}`}
       >
         {cfg.label}
