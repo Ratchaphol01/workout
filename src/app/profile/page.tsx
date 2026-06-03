@@ -388,27 +388,28 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Individual toggles — shown only when subscribed */}
-              {pushStatus === "subscribed" && (
-                <div className="border-t border-slate-100 pt-4 space-y-3">
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">
-                    เลือกประเภทการแจ้งเตือน {savingPrefs && <span className="normal-case text-violet-400">· กำลังบันทึก...</span>}
-                  </p>
+              {/* Individual toggles — always visible, disabled when not subscribed */}
+              <div className={`border-t border-slate-100 pt-4 space-y-3 transition-opacity ${
+                pushStatus !== "subscribed" ? "opacity-40 pointer-events-none" : ""
+              }`}>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+                  เลือกประเภทการแจ้งเตือน
+                  {savingPrefs && <span className="normal-case text-violet-400"> · กำลังบันทึก...</span>}
+                </p>
 
-                  {NOTIF_ITEMS.map(({ key, emoji, label, desc }) => (
-                    <div key={key} className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xl shrink-0">{emoji}</span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-700 leading-tight">{label}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
-                        </div>
+                {NOTIF_ITEMS.map(({ key, emoji, label, desc }) => (
+                  <div key={key} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xl shrink-0">{emoji}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-700 leading-tight">{label}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
                       </div>
-                      <Toggle checked={prefs[key]} onChange={(v) => savePref(key, v)} />
                     </div>
-                  ))}
-                </div>
-              )}
+                    <Toggle checked={prefs[key]} onChange={(v) => savePref(key, v)} />
+                  </div>
+                ))}
+              </div>
             </>
           )}
         </div>
