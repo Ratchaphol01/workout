@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
       return NextResponse.json(
-        { error: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" },
+        { error: "รหัสผ่านไม่ตรงตามข้อกำหนด" },
         { status: 400 }
       );
     }
